@@ -55,8 +55,7 @@ static StringRef getLineCommentIndentPrefix(StringRef Comment,
 static BreakableToken::Split
 getCommentSplit(StringRef Text, unsigned ContentStartColumn,
                 unsigned ColumnLimit, unsigned TabWidth,
-                encoding::Encoding Encoding, const FormatStyle &Style,
-                bool DecorationEndsWithStar = false) {
+                encoding::Encoding Encoding, const FormatStyle &Style) {
   LLVM_DEBUG(llvm::dbgs() << "Comment split: \"" << Text
                           << "\", Column limit: " << ColumnLimit
                           << ", Content start: " << ContentStartColumn << "\n");
@@ -145,9 +144,7 @@ getCommentSplit(StringRef Text, unsigned ContentStartColumn,
     if (SpaceOffset == 1 && Text[SpaceOffset - 1] == '*')
       return BreakableToken::Split(StringRef::npos, 0);
     StringRef BeforeCut = Text.substr(0, SpaceOffset).rtrim(Blanks);
-    StringRef AfterCut = Text.substr(SpaceOffset);
-    if (!DecorationEndsWithStar)
-      AfterCut = AfterCut.ltrim(Blanks);
+    StringRef AfterCut = Text.substr(SpaceOffset).ltrim(Blanks);
     return BreakableToken::Split(BeforeCut.size(),
                                  AfterCut.begin() - BeforeCut.end());
   }
@@ -601,7 +598,7 @@ BreakableToken::Split BreakableBlockComment::getSplit(
     return Split(StringRef::npos, 0);
   return getCommentSplit(Content[LineIndex].substr(TailOffset),
                          ContentStartColumn, ColumnLimit, Style.TabWidth,
-                         Encoding, Style, Decoration.ends_with("*"));
+                         Encoding, Style);
 }
 
 void BreakableBlockComment::adjustWhitespace(unsigned LineIndex,
@@ -703,6 +700,7 @@ void BreakableBlockComment::insertBreak(unsigned LineIndex, unsigned TailOffset,
                                         WhitespaceManager &Whitespaces) const {
   StringRef Text = Content[LineIndex].substr(TailOffset);
   StringRef Prefix = Decoration;
+  std::string PrefixStorage;
   // We need this to account for the case when we have a decoration "* " for all
   // the lines except for the last one, where the star in "*/" acts as a
   // decoration.
@@ -713,6 +711,12 @@ void BreakableBlockComment::insertBreak(unsigned LineIndex, unsigned TailOffset,
     Prefix = "";
     if (LocalIndentAtLineBreak >= 2)
       LocalIndentAtLineBreak -= 2;
+  } else if (!Prefix.empty() && Prefix.ends_with("*") && Split.second > 0) {
+    // getCommentSplit trims the whitespace at the split. Keep a visible space
+    // after star-only decorations by adding it to the inserted prefix.
+    PrefixStorage = Prefix.str();
+    PrefixStorage.push_back(' ');
+    Prefix = PrefixStorage;
   }
   // The split offset is from the beginning of the line. Convert it to an offset
   // from the beginning of the token text.
