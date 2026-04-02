@@ -2125,6 +2125,20 @@ TEST_F(FormatTestComments, ReflowsComments) {
                "      a);",
                "a = f(/* loooooong long\n* long\n*/ a);", Style22);
 
+  auto ClosingStarsStyle = getLLVMStyleWithColumns(80);
+  ClosingStarsStyle.PenaltyExcessCharacter = 10;
+  verifyFormat("/**\n"
+               " * This test verifies the special code path. It "
+               "currently exists for code coverage.\n"
+               " **/\n"
+               "void test() {}",
+               "/**\n"
+               " * This test verifies the special code path. It "
+               "currently exists for code coverage.\n"
+               " **/\n"
+               "void test() {}",
+               ClosingStarsStyle);
+
   // Keep empty comment lines.
   verifyFormat("/**/", " /**/", Style20);
   verifyFormat("/* */", " /* */", Style20);
