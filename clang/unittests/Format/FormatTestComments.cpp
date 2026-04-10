@@ -1588,14 +1588,19 @@ TEST_F(FormatTestComments, ReflowsComments) {
                "   long */",
                Style20);
 
-  auto Style80 = getLLVMStyleWithColumns(80);
-  Style80.PenaltyExcessCharacter = 10;
-  StringRef ClosingStars = "/**\n"
-                           " * This test verifies the special code path. It "
-                           "currently exists for code coverage.\n"
-                           " **/\n"
-                           "void test() {}";
-  EXPECT_EQ(ClosingStars, format(ClosingStars, Style80));
+  auto ClosingStarsStyle = getLLVMStyleWithColumns(80);
+  ClosingStarsStyle.PenaltyExcessCharacter = 10;
+  verifyFormat("/**\n"
+               " * This test verifies the special code path. It "
+               "currently exists for code coverage.\n"
+               " **/\n"
+               "void test() {}",
+               "/**\n"
+               " * This test verifies the special code path. It "
+               "currently exists for code coverage.\n"
+               " **/\n"
+               "void test() {}",
+               ClosingStarsStyle);
 
   // Reflow two short lines; keep the postfix of the last one.
   verifyFormat("/* long long long\n"

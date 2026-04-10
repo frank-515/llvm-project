@@ -417,6 +417,8 @@ public:
   void insertBreak(unsigned LineIndex, unsigned TailOffset, Split Split,
                    unsigned ContentIndent,
                    WhitespaceManager &Whitespaces) const override;
+  void compressWhitespace(unsigned LineIndex, unsigned TailOffset, Split Split,
+                          WhitespaceManager &Whitespaces) const override;
   Split getReflowSplit(unsigned LineIndex,
                        const llvm::Regex &CommentPragmasRegex) const override;
   void reflow(unsigned LineIndex,
